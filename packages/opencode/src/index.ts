@@ -112,6 +112,50 @@ const cli = yargs(hideBin(process.argv))
   })
   .usage("\n" + UI.logo())
   .completion("completion", "generate shell completion script")
+  .command({
+    command: "$0 [directory] [message..]",
+    describe: "run opencode in directory",
+    builder: (yargs) =>
+      yargs
+        .positional("directory", {
+          type: "string",
+          describe: "directory to run in",
+        })
+        .positional("message", {
+          type: "string",
+          array: true,
+          describe: "message to send",
+          default: [],
+        }),
+    handler: async (args) => {
+      if (args.directory) {
+        try {
+          process.chdir(args.directory)
+        } catch {
+          UI.error("Failed to change directory to " + args.directory)
+          process.exit(1)
+        }
+      }
+      const runArgs = {
+        message: args.message ?? [],
+        dir: undefined as string | undefined,
+        command: undefined as string | undefined,
+        continue: false,
+        session: undefined as string | undefined,
+        fork: false,
+        share: false,
+        model: undefined as string | undefined,
+        agent: undefined as string | undefined,
+        format: "default" as const,
+        file: undefined as string[] | undefined,
+        title: undefined as string | undefined,
+        variant: undefined as string | undefined,
+        thinking: false,
+        "--": [] as string[],
+      }
+      await (RunCommand as { handler: (a: typeof runArgs) => Promise<void> }).handler(runArgs)
+    },
+  })
   .command(McpCommand)
   .command(RunCommand)
   .command(DebugCommand)
