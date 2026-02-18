@@ -99,12 +99,15 @@ export namespace LSP {
       filterExperimentalServers(servers)
 
       for (const [name, item] of Object.entries(cfg.lsp ?? {})) {
+        if (name === "only") continue
         const existing = servers[name]
-        if (item.disabled) {
+        if (Array.isArray(item) || typeof item !== "object" || item === null) continue
+        if ("disabled" in item && item.disabled) {
           log.info(`LSP server ${name} is disabled`)
           delete servers[name]
           continue
         }
+        if (!("command" in item) || !Array.isArray(item.command)) continue
         servers[name] = {
           ...existing,
           id: name,
