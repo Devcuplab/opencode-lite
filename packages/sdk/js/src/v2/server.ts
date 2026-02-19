@@ -18,76 +18,16 @@ export type TuiOptions = {
   config?: Config
 }
 
-export async function createOpencodeServer(options?: ServerOptions) {
-  options = Object.assign(
-    {
-      hostname: "127.0.0.1",
-      port: 4096,
-      timeout: 5000,
-    },
-    options ?? {},
+/**
+ * Starting the opencode server from the SDK is not supported in this build.
+ * Use createOpencodeClient({ baseUrl }) and run opencode serve separately if you need a server.
+ */
+export function createOpencodeServer(_options?: ServerOptions): Promise<{ url: string; close(): void }> {
+  return Promise.reject(
+    new Error(
+      "opencode serve is not available in this build. Use createOpencodeClient({ baseUrl }) with an existing server.",
+    ),
   )
-
-  const args = [`serve`, `--hostname=${options.hostname}`, `--port=${options.port}`]
-  if (options.config?.logLevel) args.push(`--log-level=${options.config.logLevel}`)
-
-  const proc = spawn(`opencode`, args, {
-    signal: options.signal,
-    env: {
-      ...process.env,
-      OPENCODE_CONFIG_CONTENT: JSON.stringify(options.config ?? {}),
-    },
-  })
-
-  const url = await new Promise<string>((resolve, reject) => {
-    const id = setTimeout(() => {
-      reject(new Error(`Timeout waiting for server to start after ${options.timeout}ms`))
-    }, options.timeout)
-    let output = ""
-    proc.stdout?.on("data", (chunk) => {
-      output += chunk.toString()
-      const lines = output.split("\n")
-      for (const line of lines) {
-        if (line.startsWith("opencode server listening")) {
-          const match = line.match(/on\s+(https?:\/\/[^\s]+)/)
-          if (!match) {
-            throw new Error(`Failed to parse server url from output: ${line}`)
-          }
-          clearTimeout(id)
-          resolve(match[1]!)
-          return
-        }
-      }
-    })
-    proc.stderr?.on("data", (chunk) => {
-      output += chunk.toString()
-    })
-    proc.on("exit", (code) => {
-      clearTimeout(id)
-      let msg = `Server exited with code ${code}`
-      if (output.trim()) {
-        msg += `\nServer output: ${output}`
-      }
-      reject(new Error(msg))
-    })
-    proc.on("error", (error) => {
-      clearTimeout(id)
-      reject(error)
-    })
-    if (options.signal) {
-      options.signal.addEventListener("abort", () => {
-        clearTimeout(id)
-        reject(new Error("Aborted"))
-      })
-    }
-  })
-
-  return {
-    url,
-    close() {
-      proc.kill()
-    },
-  }
 }
 
 export function createOpencodeTui(options?: TuiOptions) {

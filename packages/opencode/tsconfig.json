@@ -8,9 +8,12 @@
     "types": [],
     "noUncheckedIndexedAccess": false,
     "customConditions": ["browser"],
-    "paths": {
-      "@/*": ["./src/*"],
-      "@tui/*": ["./src/cli/cmd/tui/*"]
-    }
-  }
+    "paths": { "@/*": ["./src/*"], "@tui/*": ["./src/cli/cmd/tui/*"] }
+  },
+  "exclude": [
+    "test/acp/agent-interface.test.ts",
+    "test/acp/event-subscription.test.ts",
+    "test/cli/import.test.ts",
+    "test/cli/tui/transcript.test.ts"
+  ]
 }

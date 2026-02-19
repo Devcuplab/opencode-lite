@@ -1,8 +1,9 @@
-import { createOpencodeClient, createOpencodeServer } from "@opencode-ai/sdk"
+import { createOpencodeClient } from "@opencode-ai/sdk"
 import { pathToFileURL } from "bun"
 
-const server = await createOpencodeServer()
-const client = createOpencodeClient({ baseUrl: server.url })
+// In this build, opencode serve is not started by the SDK. Use createOpencodeClient with baseUrl
+// of an existing server, or run opencode serve separately.
+const client = createOpencodeClient({ baseUrl: "http://127.0.0.1:4096" })
 
 const input = await Array.fromAsync(new Bun.Glob("packages/core/*.ts").scan())
 

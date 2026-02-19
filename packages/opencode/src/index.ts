@@ -1,7 +1,6 @@
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import { RunCommand } from "./cli/cmd/run"
-import { GenerateCommand } from "./cli/cmd/generate"
 import { Log } from "./util/log"
 import { AuthCommand } from "./cli/cmd/auth"
 import { AgentCommand } from "./cli/cmd/agent"
@@ -12,19 +11,11 @@ import { UI } from "./cli/ui"
 import { Installation } from "./installation"
 import { NamedError } from "@opencode-ai/util/error"
 import { FormatError } from "./cli/error"
-import { ServeCommand } from "./cli/cmd/serve"
 import { DebugCommand } from "./cli/cmd/debug"
 import { StatsCommand } from "./cli/cmd/stats"
 import { McpCommand } from "./cli/cmd/mcp"
-import { GithubCommand } from "./cli/cmd/github"
 import { ExportCommand } from "./cli/cmd/export"
-import { ImportCommand } from "./cli/cmd/import"
-import { AttachCommand } from "./cli/cmd/tui/attach"
-import { TuiThreadCommand } from "./cli/cmd/tui/thread"
-import { AcpCommand } from "./cli/cmd/acp"
 import { EOL } from "os"
-import { WebCommand } from "./cli/cmd/web"
-import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { DbCommand } from "./cli/cmd/db"
 import path from "path"
@@ -119,25 +110,60 @@ const cli = yargs(hideBin(process.argv))
   })
   .usage("\n" + UI.logo())
   .completion("completion", "generate shell completion script")
-  .command(AcpCommand)
+  .command({
+    command: "$0 [directory] [message..]",
+    describe: "run opencode in directory",
+    builder: (yargs) =>
+      yargs
+        .positional("directory", {
+          type: "string",
+          describe: "directory to run in",
+        })
+        .positional("message", {
+          type: "string",
+          array: true,
+          describe: "message to send",
+          default: [],
+        }),
+    handler: async (args) => {
+      if (args.directory) {
+        try {
+          process.chdir(args.directory)
+        } catch {
+          UI.error("Failed to change directory to " + args.directory)
+          process.exit(1)
+        }
+      }
+      const runArgs = {
+        message: args.message ?? [],
+        dir: undefined as string | undefined,
+        command: undefined as string | undefined,
+        continue: false,
+        session: undefined as string | undefined,
+        fork: false,
+        share: false,
+        model: undefined as string | undefined,
+        agent: undefined as string | undefined,
+        format: "default" as const,
+        file: undefined as string[] | undefined,
+        title: undefined as string | undefined,
+        variant: undefined as string | undefined,
+        thinking: false,
+        "--": [] as string[],
+      }
+      await (RunCommand as { handler: (a: typeof runArgs) => Promise<void> }).handler(runArgs)
+    },
+  })
   .command(McpCommand)
-  .command(TuiThreadCommand)
-  .command(AttachCommand)
   .command(RunCommand)
-  .command(GenerateCommand)
   .command(DebugCommand)
   .command(AuthCommand)
   .command(AgentCommand)
   .command(UpgradeCommand)
   .command(UninstallCommand)
-  .command(ServeCommand)
-  .command(WebCommand)
   .command(ModelsCommand)
   .command(StatsCommand)
   .command(ExportCommand)
-  .command(ImportCommand)
-  .command(GithubCommand)
-  .command(PrCommand)
   .command(SessionCommand)
   .command(DbCommand)
   .fail((msg, err) => {

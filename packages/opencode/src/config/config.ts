@@ -1010,7 +1010,7 @@ export namespace Config {
       keybinds: Keybinds.optional().describe("Custom keybind configurations"),
       logLevel: Log.Level.optional().describe("Log level"),
       tui: TUI.optional().describe("TUI specific settings"),
-      server: Server.optional().describe("Server configuration for opencode serve and web commands"),
+      server: Server.optional().describe("Reserved. Server configuration is not used in this build."),
       command: z
         .record(z.string(), Command)
         .optional()
@@ -1117,21 +1117,22 @@ export namespace Config {
       lsp: z
         .union([
           z.literal(false),
-          z.record(
-            z.string(),
-            z.union([
-              z.object({
-                disabled: z.literal(true),
-              }),
-              z.object({
-                command: z.array(z.string()),
-                extensions: z.array(z.string()).optional(),
-                disabled: z.boolean().optional(),
-                env: z.record(z.string(), z.string()).optional(),
-                initialization: z.record(z.string(), z.any()).optional(),
-              }),
-            ]),
-          ),
+          z
+            .object({
+              only: z.array(z.string()).optional().describe("Only enable these LSP server ids; all others disabled"),
+            })
+            .catchall(
+              z.union([
+                z.object({ disabled: z.literal(true) }),
+                z.object({
+                  command: z.array(z.string()),
+                  extensions: z.array(z.string()).optional(),
+                  disabled: z.boolean().optional(),
+                  env: z.record(z.string(), z.string()).optional(),
+                  initialization: z.record(z.string(), z.any()).optional(),
+                }),
+              ]),
+            ),
         ])
         .optional()
         .refine(
@@ -1139,11 +1140,12 @@ export namespace Config {
             if (!data) return true
             if (typeof data === "boolean") return true
             const serverIds = new Set(Object.values(LSPServer).map((s) => s.id))
-
             return Object.entries(data).every(([id, config]) => {
-              if (config.disabled) return true
+              if (id === "only") return true
+              if (typeof config !== "object" || config === null) return true
+              if ("disabled" in config && config.disabled) return true
               if (serverIds.has(id)) return true
-              return Boolean(config.extensions)
+              return Boolean("extensions" in config && config.extensions)
             })
           },
           {
